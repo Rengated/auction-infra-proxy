@@ -1,0 +1,11 @@
+# stunnel: TLS-обёртка для HTTP-CONNECT прокси.
+# Снаружи выглядит как HTTPS-сервер → anti-DDoS хостера пропускает.
+# Расшифрованный трафик уходит в 3proxy (HTTP-CONNECT на 127.0.0.1:3129).
+foreground = yes
+pid =
+debug = 4
+
+[https-proxy]
+accept = 0.0.0.0:__PROXY_PORT__
+connect = 127.0.0.1:3129
+cert = /etc/stunnel/stunnel.pem

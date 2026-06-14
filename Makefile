@@ -53,7 +53,7 @@ secrets: .env
 .PHONY: render
 render: secrets
 	@set -a; source ./.env; set +a; \
-	mkdir -p telemt-config; \
+	mkdir -p telemt-config stunnel-config; \
 	if [ -n "$$MTG_ADTAG" ]; then ADTAG_LINE="ad_tag = \"$$MTG_ADTAG\""; \
 	else ADTAG_LINE=""; fi; \
 	sed -e "s|__SECRET__|$$MTG_SECRET|g" -e "s|__DOMAIN__|$$FRONT_DOMAIN|g" \
@@ -61,6 +61,8 @@ render: secrets
 		telemt.toml.template > telemt-config/telemt.toml; \
 	sed -e "s|__SOCKS_USER__|$$SOCKS_USER|g" -e "s|__SOCKS_PASS__|$$SOCKS_PASS|g" \
 		3proxy.cfg.template > 3proxy.cfg; \
+	sed -e "s|__PROXY_PORT__|$$PROXY_PORT|g" \
+		stunnel.conf.template > stunnel-config/stunnel.conf; \
 	if [ -n "$$MTG_ADTAG" ]; then echo "==> Конфиги сгенерированы (спонсорский канал включён)"; \
 	else echo "==> Конфиги сгенерированы (без спонсорского канала — задайте MTG_ADTAG)"; fi
 
@@ -72,7 +74,7 @@ install: docker render
 	@echo "════════════════════════════════════════════════════════════════"
 	@echo " Прокси подняты. Дальше:"
 	@echo "  1) make link  — получить ссылки"
-	@echo "  2) откройте порты MTG_PORT и SOCKS_PORT в фаерволе/у хостера"
+	@echo "  2) откройте порты MTG_PORT и PROXY_PORT в фаерволе/у хостера"
 	@echo "════════════════════════════════════════════════════════════════"
 	@$(MAKE) --no-print-directory link
 
@@ -96,8 +98,9 @@ link:
 		echo "    3) впишите в .env: MTG_ADTAG=<тег>  →  make render && make restart"; \
 	fi; \
 	echo ""; \
-	echo "── SOCKS5 для бота (в .env прода Hermes Trade) ──"; \
-	echo "  TELEGRAM_PROXY=socks5://$$SOCKS_USER:$$SOCKS_PASS@$$IP:$$SOCKS_PORT"; \
+	echo "── Прокси для бота (в .env прода Hermes Trade) ──"; \
+	echo "  TELEGRAM_PROXY=https://$$SOCKS_USER:$$SOCKS_PASS@$$IP:$$PROXY_PORT"; \
+	echo "  (HTTPS через stunnel — обходит anti-DDoS хостера; серт самоподписанный)"; \
 	echo ""
 
 .PHONY: logs

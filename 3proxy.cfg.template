@@ -1,5 +1,7 @@
-# SOCKS5 для бота Hermes Trade. Генерируется из шаблона через `make install`.
+# Прокси для бота Hermes Trade. Генерируется из шаблона через `make install`.
 # Логин/пароль подставляются автоматически из .env.
+# Слушает только localhost — наружу торчит stunnel (оборачивает в TLS,
+# чтобы anti-DDoS хостера пропускал трафик как обычный HTTPS).
 nserver 1.1.1.1
 nserver 8.8.8.8
 nscache 65536
@@ -10,4 +12,8 @@ log
 users __SOCKS_USER__:CL:__SOCKS_PASS__
 auth strong
 allow __SOCKS_USER__
-socks -p1080
+
+# HTTP-CONNECT прокси на localhost:3129 — его оборачивает stunnel в TLS
+proxy -p3129 -i127.0.0.1
+# SOCKS5 на localhost:1080 — для прямого доступа/отладки (наружу не торчит)
+socks -p1080 -i127.0.0.1

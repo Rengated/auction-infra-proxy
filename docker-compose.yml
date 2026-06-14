@@ -1,8 +1,9 @@
 # Зарубежный прокси-сервер для Hermes Trade:
 #   telemt  — MTProto-прокси (fake-TLS, спонсорский канал) — активный Rust-форк
-#   3proxy  — SOCKS5 для бота (исходящие запросы API к api.telegram.org)
+#   socks   — 3proxy: HTTP-CONNECT + SOCKS5 на localhost (наружу через stunnel)
+#   stunnel — TLS-обёртка для прокси бота (anti-DDoS хостера пропускает как HTTPS)
 #
-#   make install   (генерирует секреты + поднимает оба сервиса)
+#   make install   (генерирует секреты + поднимает сервисы)
 name: proxy
 
 services:
@@ -30,12 +31,22 @@ services:
         soft: 65536
         hard: 65536
 
-  # ── SOCKS5 для бота (3proxy) ──────────────────────────────────────────────
-  # network_mode: host — 3proxy слушает порт хоста напрямую (без docker-proxy/bridge,
-  # иначе внешний ответный трафик SOCKS может не маршрутизироваться).
+  # ── Прокси для бота: 3proxy на localhost (HTTP-CONNECT :3129, SOCKS5 :1080) ─
   socks:
     image: 3proxy/3proxy:latest
     restart: unless-stopped
     network_mode: host
     volumes:
       - ./3proxy.cfg:/etc/3proxy/3proxy.cfg:ro
+
+  # ── TLS-обёртка: снаружи HTTPS, внутрь → 3proxy HTTP-CONNECT ───────────────
+  stunnel:
+    build:
+      context: .
+      dockerfile: stunnel.Dockerfile
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./stunnel-config:/etc/stunnel
+    depends_on:
+      - socks
