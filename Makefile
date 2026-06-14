@@ -35,17 +35,20 @@ docker:
 .PHONY: secrets
 secrets: .env
 	@set -a; source ./.env; set +a; \
+	FRONT_DOMAIN=$${FRONT_DOMAIN:-www.microsoft.com}; \
 	if [ -z "$$MTG_SECRET" ]; then \
 		echo "==> Генерирую MTProto-секрет (fake-TLS под $$FRONT_DOMAIN)..."; \
 		docker pull -q $(MTG_IMAGE) >/dev/null; \
 		SECRET=$$(docker run --rm $(MTG_IMAGE) generate-secret "$$FRONT_DOMAIN"); \
-		sed -i "s|^MTG_SECRET=.*|MTG_SECRET=$$SECRET|" .env; \
+		grep -v '^MTG_SECRET=' .env > .env.tmp && mv .env.tmp .env; \
+		printf 'MTG_SECRET=%s\n' "$$SECRET" >> .env; \
 		echo "    secret: $$SECRET"; \
 	else echo "==> MTG_SECRET уже задан"; fi; \
 	if [ -z "$$SOCKS_PASS" ]; then \
 		echo "==> Генерирую пароль SOCKS5..."; \
 		PASS=$$(head -c 18 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 20); \
-		sed -i "s|^SOCKS_PASS=.*|SOCKS_PASS=$$PASS|" .env; \
+		grep -v '^SOCKS_PASS=' .env > .env.tmp && mv .env.tmp .env; \
+		printf 'SOCKS_PASS=%s\n' "$$PASS" >> .env; \
 		echo "    socks: $$SOCKS_USER / $$PASS"; \
 	else echo "==> SOCKS_PASS уже задан"; fi
 
