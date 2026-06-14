@@ -1,0 +1,26 @@
+# Зарубежный прокси-сервер для Hermes Trade:
+#   mtg     — MTProto-прокси (спонсорский канал, раздаётся клиентам Telegram)
+#   3proxy  — SOCKS5 для бота (исходящие запросы API к api.telegram.org)
+#
+#   make install   (генерирует секреты + поднимает оба сервиса)
+name: proxy
+
+services:
+  # ── MTProto-прокси (mtg by 9seconds) ──────────────────────────────────────
+  mtg:
+    image: nineseconds/mtg:2
+    restart: unless-stopped
+    command: ["run", "/config.toml"]
+    volumes:
+      - ./mtg.toml:/config.toml:ro
+    ports:
+      - "${MTG_PORT:-8443}:3128"
+
+  # ── SOCKS5 для бота (3proxy) ──────────────────────────────────────────────
+  socks:
+    image: 3proxy/3proxy:latest
+    restart: unless-stopped
+    volumes:
+      - ./3proxy.cfg:/etc/3proxy/3proxy.cfg:ro
+    ports:
+      - "${SOCKS_PORT:-1080}:1080"

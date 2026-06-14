@@ -1,0 +1,10 @@
+# MTProto-прокси (mtg v2). Генерируется из шаблона через `make install`.
+# Секрет (fake-TLS под FRONT_DOMAIN) подставляется автоматически из .env.
+secret = "__SECRET__"
+bind-to = "0.0.0.0:3128"
+
+[defense.anti-replay]
+enabled = true
+
+[stats.statsd]
+enabled = false

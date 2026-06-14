@@ -1,0 +1,13 @@
+# SOCKS5 для бота Hermes Trade. Генерируется из шаблона через `make install`.
+# Логин/пароль подставляются автоматически из .env.
+nserver 1.1.1.1
+nserver 8.8.8.8
+nscache 65536
+timeouts 1 5 30 60 180 1800 15 60
+log
+
+# CL = пароль в открытом виде в конфиге (файл лежит только на сервере)
+users __SOCKS_USER__:CL:__SOCKS_PASS__
+auth strong
+allow __SOCKS_USER__
+socks -p1080
