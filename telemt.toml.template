@@ -4,6 +4,8 @@
 [general]
 use_middle_proxy = true
 log_level = "normal"
+# Диагностика TLS-фингерпринтов пишет в файл — выключаем (в read-only контейнере падает)
+beobachten = false
 __ADTAG__
 
 [general.modes]
@@ -20,6 +22,9 @@ enabled = false
 
 [[server.listeners]]
 ip = "0.0.0.0"
+# Разрешить переиспользование сокета (страховка от «address already in use»
+# при быстром рестарте; основной конфликт всё равно решается сносом старого прокси)
+reuse_allow = true
 
 [censorship]
 tls_domain = "__DOMAIN__"
