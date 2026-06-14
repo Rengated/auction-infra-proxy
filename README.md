@@ -30,7 +30,12 @@ make install
    ```bash
    ufw allow 8443/tcp && ufw allow 1080/tcp
    ```
-2. **Спонсорский канал** для MTProto: напиши **@MTProxybot** в Telegram → `/newproxy` → укажи `IP:8443` и секрет (из `make link`) → `/setpromo` → выбери свой канал. Теперь у всех, кто подключился через прокси, сверху закреплён твой канал.
+2. **Спонсорский канал** для MTProto (через adtag — fake-TLS сохраняется):
+   - `make link` покажет **короткий 32-hex секрет «для бота»** (не путать с fake-TLS секретом — его @MTProxybot не принимает).
+   - Напиши **@MTProxybot** → `/newproxy` → server `IP`, port `8443`, secret — тот самый 32-hex из `make link`.
+   - `/setpromo` → выбери свой канал → бот выдаст **adtag** (32 hex).
+   - Впиши его в `.env`: `MTG_ADTAG=<тег>`, затем `make render && make restart`.
+   - На сервере остаётся fake-TLS-маскировка, а канал привязан через adtag. Теперь у всех, кто подключился через прокси, сверху закреплён твой канал.
 3. **Подключи бота** Hermes Trade: на прод-сервере в `.env` добавь строку `TELEGRAM_PROXY=socks5://...` (из `make link`) и пересобери api:
    ```bash
    docker compose -f docker-compose.prod.yml up -d --build api
@@ -42,7 +47,8 @@ make install
 |---|---|
 | `MTG_PORT` | внешний порт MTProto (по умолч. 8443) |
 | `FRONT_DOMAIN` | домен маскировки fake-TLS (трафик выглядит как HTTPS к нему) |
-| `MTG_SECRET` | секрет mtg — генерируется автоматически |
+| `MTG_SECRET` | секрет mtg (fake-TLS) — генерируется автоматически |
+| `MTG_ADTAG` | adtag спонсорского канала от @MTProxybot — пусто = без промо |
 | `SOCKS_PORT` | внешний порт SOCKS5 (по умолч. 1080) |
 | `SOCKS_USER` / `SOCKS_PASS` | логин/пароль SOCKS5 — пароль генерируется автоматически |
 

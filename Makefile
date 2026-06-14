@@ -53,10 +53,14 @@ secrets: .env
 .PHONY: render
 render: secrets
 	@set -a; source ./.env; set +a; \
-	sed "s|__SECRET__|$$MTG_SECRET|g" mtg.toml.template > mtg.toml; \
+	if [ -n "$$MTG_ADTAG" ]; then ADTAG_LINE="adtag = \"$$MTG_ADTAG\""; \
+	else ADTAG_LINE=""; fi; \
+	sed -e "s|__SECRET__|$$MTG_SECRET|g" -e "s|__ADTAG__|$$ADTAG_LINE|g" \
+		mtg.toml.template > mtg.toml; \
 	sed -e "s|__SOCKS_USER__|$$SOCKS_USER|g" -e "s|__SOCKS_PASS__|$$SOCKS_PASS|g" \
 		3proxy.cfg.template > 3proxy.cfg; \
-	echo "==> Конфиги сгенерированы (mtg.toml, 3proxy.cfg)"
+	if [ -n "$$MTG_ADTAG" ]; then echo "==> Конфиги сгенерированы (спонсорский канал включён)"; \
+	else echo "==> Конфиги сгенерированы (без спонсорского канала — задайте MTG_ADTAG)"; fi
 
 # ── Полная установка ──────────────────────────────────────────────────────
 .PHONY: install
@@ -76,12 +80,22 @@ link:
 	@set -a; source ./.env; set +a; \
 	IP=$$(curl -fsS --max-time 5 https://api.ipify.org || echo "<IP-СЕРВЕРА>"); \
 	echo ""; \
-	echo "── MTProto (раздавать клиентам / привязать спонсорский канал) ──"; \
+	echo "── MTProto (раздавать клиентам) ──"; \
 	echo "  tg://proxy?server=$$IP&port=$$MTG_PORT&secret=$$MTG_SECRET"; \
 	echo "  https://t.me/proxy?server=$$IP&port=$$MTG_PORT&secret=$$MTG_SECRET"; \
 	echo ""; \
-	echo "  Спонсорский канал: напишите @MTProxybot в Telegram → /newproxy →"; \
-	echo "  укажите $$IP:$$MTG_PORT и секрет выше → затем /setpromo (ваш канал)."; \
+	if [ -n "$$MTG_ADTAG" ]; then \
+		echo "  Спонсорский канал: ВКЛЮЧЁН (adtag задан)."; \
+	else \
+		CORE=$$(echo "$$MTG_SECRET" | tr '_-' '/+' | base64 -d 2>/dev/null | od -An -tx1 | tr -d ' \n' | sed 's/^ee//' | head -c 32); \
+		echo "  Спонсорский канал: пока выключен. Чтобы включить —"; \
+		echo "    1) @MTProxybot → /newproxy → server: $$IP  port: $$MTG_PORT"; \
+		echo "       secret для бота (32 hex, НЕ fake-TLS): $$CORE"; \
+		echo "    2) /setpromo → выберите канал → бот выдаст adtag (32 hex)"; \
+		echo "    3) впишите adtag в .env: MTG_ADTAG=<тег>  →  make render && make restart"; \
+		echo "    (боту даём короткий hex-секрет — fake-TLS он не принимает;"; \
+		echo "     на сервере остаётся fake-TLS, канал привязан через adtag)"; \
+	fi; \
 	echo ""; \
 	echo "── SOCKS5 для бота (в .env прода Hermes Trade) ──"; \
 	echo "  TELEGRAM_PROXY=socks5://$$SOCKS_USER:$$SOCKS_PASS@$$IP:$$SOCKS_PORT"; \

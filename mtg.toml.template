@@ -2,6 +2,7 @@
 # Секрет (fake-TLS под FRONT_DOMAIN) подставляется автоматически из .env.
 secret = "__SECRET__"
 bind-to = "0.0.0.0:3128"
+__ADTAG__
 
 [defense.anti-replay]
 enabled = true
