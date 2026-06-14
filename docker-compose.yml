@@ -31,10 +31,11 @@ services:
         hard: 65536
 
   # ── SOCKS5 для бота (3proxy) ──────────────────────────────────────────────
+  # network_mode: host — 3proxy слушает порт хоста напрямую (без docker-proxy/bridge,
+  # иначе внешний ответный трафик SOCKS может не маршрутизироваться).
   socks:
     image: 3proxy/3proxy:latest
     restart: unless-stopped
+    network_mode: host
     volumes:
       - ./3proxy.cfg:/etc/3proxy/3proxy.cfg:ro
-    ports:
-      - "${SOCKS_PORT:-1080}:1080"
