@@ -4,7 +4,6 @@
 #   make logs / down / restart / update
 
 SHELL := /bin/bash
-MTG_IMAGE := nineseconds/mtg:2
 
 .DEFAULT_GOAL := help
 
@@ -35,11 +34,9 @@ docker:
 .PHONY: secrets
 secrets: .env
 	@set -a; source ./.env; set +a; \
-	FRONT_DOMAIN=$${FRONT_DOMAIN:-www.microsoft.com}; \
 	if [ -z "$$MTG_SECRET" ]; then \
-		echo "==> Генерирую MTProto-секрет (fake-TLS под $$FRONT_DOMAIN)..."; \
-		docker pull -q $(MTG_IMAGE) >/dev/null; \
-		SECRET=$$(docker run --rm $(MTG_IMAGE) generate-secret "$$FRONT_DOMAIN"); \
+		echo "==> Генерирую MTProto-секрет (32 hex)..."; \
+		SECRET=$$(openssl rand -hex 16); \
 		grep -v '^MTG_SECRET=' .env > .env.tmp && mv .env.tmp .env; \
 		printf 'MTG_SECRET=%s\n' "$$SECRET" >> .env; \
 		echo "    secret: $$SECRET"; \
@@ -56,10 +53,12 @@ secrets: .env
 .PHONY: render
 render: secrets
 	@set -a; source ./.env; set +a; \
-	if [ -n "$$MTG_ADTAG" ]; then ADTAG_LINE="adtag = \"$$MTG_ADTAG\""; \
+	mkdir -p telemt-config; \
+	if [ -n "$$MTG_ADTAG" ]; then ADTAG_LINE="ad_tag = \"$$MTG_ADTAG\""; \
 	else ADTAG_LINE=""; fi; \
-	sed -e "s|__SECRET__|$$MTG_SECRET|g" -e "s|__ADTAG__|$$ADTAG_LINE|g" \
-		mtg.toml.template > mtg.toml; \
+	sed -e "s|__SECRET__|$$MTG_SECRET|g" -e "s|__DOMAIN__|$$FRONT_DOMAIN|g" \
+		-e "s|__PORT__|$$MTG_PORT|g" -e "s|__ADTAG__|$$ADTAG_LINE|g" \
+		telemt.toml.template > telemt-config/telemt.toml; \
 	sed -e "s|__SOCKS_USER__|$$SOCKS_USER|g" -e "s|__SOCKS_PASS__|$$SOCKS_PASS|g" \
 		3proxy.cfg.template > 3proxy.cfg; \
 	if [ -n "$$MTG_ADTAG" ]; then echo "==> Конфиги сгенерированы (спонсорский канал включён)"; \
@@ -84,20 +83,17 @@ link:
 	IP=$$(curl -fsS --max-time 5 https://api.ipify.org || echo "<IP-СЕРВЕРА>"); \
 	echo ""; \
 	echo "── MTProto (раздавать клиентам) ──"; \
-	echo "  tg://proxy?server=$$IP&port=$$MTG_PORT&secret=$$MTG_SECRET"; \
-	echo "  https://t.me/proxy?server=$$IP&port=$$MTG_PORT&secret=$$MTG_SECRET"; \
+	echo "  tg://proxy?server=$$IP&port=$$MTG_PORT&secret=ee$$MTG_SECRET$$(printf '%s' "$$FRONT_DOMAIN" | od -An -tx1 | tr -d ' \n')"; \
+	echo "  https://t.me/proxy?server=$$IP&port=$$MTG_PORT&secret=ee$$MTG_SECRET$$(printf '%s' "$$FRONT_DOMAIN" | od -An -tx1 | tr -d ' \n')"; \
 	echo ""; \
 	if [ -n "$$MTG_ADTAG" ]; then \
-		echo "  Спонсорский канал: ВКЛЮЧЁН (adtag задан)."; \
+		echo "  Спонсорский канал: ВКЛЮЧЁН (ad_tag задан)."; \
 	else \
-		CORE=$$(echo "$$MTG_SECRET" | tr '_-' '/+' | base64 -d 2>/dev/null | od -An -tx1 | tr -d ' \n' | sed 's/^ee//' | head -c 32); \
 		echo "  Спонсорский канал: пока выключен. Чтобы включить —"; \
 		echo "    1) @MTProxybot → /newproxy → server: $$IP  port: $$MTG_PORT"; \
-		echo "       secret для бота (32 hex, НЕ fake-TLS): $$CORE"; \
-		echo "    2) /setpromo → выберите канал → бот выдаст adtag (32 hex)"; \
-		echo "    3) впишите adtag в .env: MTG_ADTAG=<тег>  →  make render && make restart"; \
-		echo "    (боту даём короткий hex-секрет — fake-TLS он не принимает;"; \
-		echo "     на сервере остаётся fake-TLS, канал привязан через adtag)"; \
+		echo "       secret для бота (32 hex): $$MTG_SECRET"; \
+		echo "    2) /setpromo → выберите канал → бот выдаст ad_tag (32 hex)"; \
+		echo "    3) впишите в .env: MTG_ADTAG=<тег>  →  make render && make restart"; \
 	fi; \
 	echo ""; \
 	echo "── SOCKS5 для бота (в .env прода Hermes Trade) ──"; \

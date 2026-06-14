@@ -1,0 +1,31 @@
+# MTProto-прокси (telemt). Генерируется из шаблона через `make install`.
+# Поля секрета/домена/порта/ad_tag подставляются автоматически из .env.
+
+[general]
+use_middle_proxy = true
+log_level = "normal"
+__ADTAG__
+
+[general.modes]
+# Только fake-TLS (маскировка под обычный HTTPS) — лучший обход блокировок
+classic = false
+secure = false
+tls = true
+
+[server]
+port = __PORT__
+
+[server.api]
+enabled = false
+
+[[server.listeners]]
+ip = "0.0.0.0"
+
+[censorship]
+tls_domain = "__DOMAIN__"
+mask = true
+tls_emulation = true
+tls_front_dir = "/tmp/tlsfront"
+
+[access.users]
+hermes = "__SECRET__"

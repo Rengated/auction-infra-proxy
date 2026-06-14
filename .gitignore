@@ -1,4 +1,5 @@
 # Секреты и сгенерированные из шаблонов конфиги — только на сервере
 .env
-mtg.toml
+.env.tmp
 3proxy.cfg
+telemt-config/
