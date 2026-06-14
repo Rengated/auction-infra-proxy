@@ -54,6 +54,7 @@ secrets: .env
 render: secrets
 	@set -a; source ./.env; set +a; \
 	mkdir -p telemt-config stunnel-config; \
+	MTG_PORT=$${MTG_PORT:-8443}; PROXY_PORT=$${PROXY_PORT:-8444}; FRONT_DOMAIN=$${FRONT_DOMAIN:-ya.ru}; \
 	if [ -n "$$MTG_ADTAG" ]; then ADTAG_LINE="ad_tag = \"$$MTG_ADTAG\""; \
 	else ADTAG_LINE=""; fi; \
 	sed -e "s|__SECRET__|$$MTG_SECRET|g" -e "s|__DOMAIN__|$$FRONT_DOMAIN|g" \
